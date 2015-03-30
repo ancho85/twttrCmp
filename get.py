@@ -12,23 +12,39 @@ ACCESS_SECRET = ''
 #getting current followers list
 auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
-api = tweepy.API(auth)
+api = tweepy.API(auth, secure=True)
+
 currentFileName = "%s" % datetime.now().strftime("%Y%m%d--%H-%M")
 theFile = file(currentFileName, "w")
-for page in tweepy.Cursor(api.followers).pages():
-    for pageNr in page:
-        theFile.write(pageNr.screen_name+"\n")
-theFile.close()
+
+
+followers = api.followers_ids(screen_name='ancho85')
+userList = []
+sortedUserList = []
+for page in followers:
+    userList.append(page)
+    if len(userList) == 100:
+        results = api.lookup_users(user_ids=userList)
+        for result in results:
+            sortedUserList.append(result.screen_name)
+        userList = []
+if len(userList)>0:
+    results = api.lookup_users(user_ids=userList)
+    for result in results:
+        sortedUserList.append(result.screen_name)
+sortedUserList.sort()
+for user in sortedUserList:
+    theFile.write(user+"\n")
 
 #accessing previous file generated
 prevFile = None
-for root,d,files in os.walk("."):
-    files.sort()
-    for fn in files:
+#for root,d,files in os.walk("."):
+for fn in sorted(os.listdir(".")):
         if fn[-3:] == ".py":
             continue
         if fn != currentFileName:
             prevFile = fn
+
 #cmpFile = file(prevFile,"r")
 
 import difflib
