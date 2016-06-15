@@ -3,6 +3,7 @@ import sys
 import tweepy
 from datetime import datetime
 import os
+import difflib
 
 CONSUMER_KEY = ''
 CONSUMER_SECRET = ''
@@ -20,21 +21,24 @@ theFile = file(currentFileName, "w")
 
 followers = api.followers_ids(screen_name='ancho85')
 userList = []
-sortedUserList = []
+sortedUserDict = {}
 for page in followers:
     userList.append(page)
     if len(userList) == 100:
         results = api.lookup_users(user_ids=userList)
         for result in results:
-            sortedUserList.append(result.screen_name)
+            sortedUserDict.update({result.screen_name: result.id})
         userList = []
 if len(userList)>0:
     results = api.lookup_users(user_ids=userList)
     for result in results:
-        sortedUserList.append(result.screen_name)
-sortedUserList.sort()
-for user in sortedUserList:
-    theFile.write(user+"\n")
+        sortedUserDict.update({result.screen_name: result.id})
+sortedUserList = sorted(sortedUserDict.keys())
+for userKey in sortedUserList:
+    fixed_id = str(sortedUserDict[userKey])
+    while len(fixed_id) < 30:  # fix to 30 characters
+        fixed_id += " "
+    theFile.write("%s\t%s\n" % (fixed_id, userKey))
 
 #accessing previous file generated
 prevFile = None
@@ -47,7 +51,6 @@ for fn in sorted(os.listdir(".")):
 
 #cmpFile = file(prevFile,"r")
 
-import difflib
 fromfile, tofile = prevFile, currentFileName
 
 fromlines = open(fromfile, 'U').readlines()
